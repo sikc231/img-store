@@ -1,0 +1,47 @@
+# Build directories
+build/
+cmake-build-*/
+*.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.make
+
+# Compiled binaries
+bin/
+*.exe
+*.out
+*.app
+img-store
+
+# Compiled object files
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Storage directory (runtime data)
+storage/*
+!storage/.gitkeep
+
+# Logs
+*.log
+
+# Dependencies
+lib/crow/
+lib/asio/
+
+# Test outputs
+test_results/
+*.test
