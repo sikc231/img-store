@@ -1,4 +1,4 @@
-# Image Storage Server
+# Image Storage Server - Made with a big help of Cloude Sonnet 4.5
 
 A high-performance C++20 HTTP server for storing, retrieving, and managing images with a sharded filesystem layout.
 
