@@ -3,35 +3,80 @@
 
 namespace imgstore {
 
-Server::Server(const std::string& storageDir, int port)
+Server::Server(const std::string& storageDir, int port, const std::string& apiKey)
     : port_(port),
       storage_(std::make_shared<StorageManager>(storageDir)),
-      handler_(std::make_shared<ImageHandler>(storage_)) {
+      handler_(std::make_shared<ImageHandler>(storage_)),
+      authEnabled_(!apiKey.empty()) {
+    
+    if (authEnabled_) {
+        auth_ = std::make_shared<AuthMiddleware>(apiKey);
+        std::cout << "🔒 API key authentication enabled" << std::endl;
+        std::cout << "   GET requests: Public (no auth required)" << std::endl;
+        std::cout << "   POST/DELETE: Protected (API key required)" << std::endl;
+    } else {
+        std::cout << "⚠️  WARNING: Running without authentication!" << std::endl;
+        std::cout << "   All endpoints are publicly accessible." << std::endl;
+        std::cout << "   Set IMG_STORE_API_KEY environment variable to enable auth." << std::endl;
+    }
+    
     setupRoutes();
 }
 
+bool Server::requireAuth(const crow::request& req) {
+    if (!authEnabled_) {
+        return true; // Auth disabled, allow all
+    }
+    
+    // Check Authorization header first
+    auto authHeader = req.get_header_value("Authorization");
+    if (authHeader.empty()) {
+        // Fallback to X-API-Key header
+        authHeader = req.get_header_value("X-API-Key");
+    }
+    
+    auto apiKey = auth_->extractApiKey(authHeader);
+    if (!apiKey || !auth_->validateApiKey(*apiKey)) {
+        return false;
+    }
+    
+    return true;
+}
+
 void Server::setupRoutes() {
-    // Health check endpoint
+    // Health check endpoint - PUBLIC
     CROW_ROUTE(app_, "/health")
     ([this]() {
         return handler_->handleHealth();
     });
 
-    // Upload endpoint - POST /images
+    // Upload endpoint - PROTECTED
     CROW_ROUTE(app_, "/images").methods(crow::HTTPMethod::POST)
     ([this](const crow::request& req) {
+        if (!requireAuth(req)) {
+            crow::json::wvalue result;
+            result["error"] = "Unauthorized";
+            result["message"] = "API key required for write operations";
+            return crow::response(401, result);
+        }
         return handler_->handleUpload(req);
     });
 
-    // Download endpoint - GET /images/<id>
+    // Download endpoint - PUBLIC (read-only)
     CROW_ROUTE(app_, "/images/<string>")
     ([this](const std::string& imageId) {
         return handler_->handleDownload(imageId);
     });
 
-    // Delete endpoint - DELETE /images/<id>
+    // Delete endpoint - PROTECTED
     CROW_ROUTE(app_, "/images/<string>").methods(crow::HTTPMethod::DELETE)
-    ([this](const std::string& imageId) {
+    ([this](const crow::request& req, const std::string& imageId) {
+        if (!requireAuth(req)) {
+            crow::json::wvalue result;
+            result["error"] = "Unauthorized";
+            result["message"] = "API key required for write operations";
+            return crow::response(401, result);
+        }
         return handler_->handleDelete(imageId);
     });
 }

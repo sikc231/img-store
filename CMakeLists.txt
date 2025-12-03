@@ -50,6 +50,7 @@ set(SOURCES
     src/image_handler.cpp
     src/storage_manager.cpp
     src/hash_utils.cpp
+    src/auth_middleware.cpp
 )
 
 # Create executable

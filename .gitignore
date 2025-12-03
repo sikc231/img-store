@@ -35,6 +35,12 @@ img-store
 storage/*
 !storage/.gitkeep
 
+# Environment variables (contains secrets)
+.env
+
+# Keep example file in git
+!.env.example
+
 # Logs
 *.log
 
