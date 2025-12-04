@@ -18,7 +18,6 @@ WORKDIR /app
 COPY CMakeLists.txt .
 COPY include/ include/
 COPY src/ src/
-COPY lib/ lib/
 
 # Build the project
 RUN mkdir -p build && \
