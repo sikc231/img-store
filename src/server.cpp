@@ -91,7 +91,7 @@ void Server::run() {
     std::cout << "  GET    /health       - Health check" << std::endl;
     std::cout << std::endl;
 
-    app_.port(port_).multithreaded().run();
+    app_.bindaddr("0.0.0.0").port(port_).multithreaded().run();
 }
 
 void Server::stop() {
