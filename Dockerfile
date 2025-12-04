@@ -54,6 +54,9 @@ USER imgstore
 # Expose port
 EXPOSE 8080
 
+# Label for Coolify port detection
+LABEL coolify.port="8080"
+
 # Create volume mount point
 VOLUME ["/app/storage"]
 
