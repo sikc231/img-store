@@ -88,6 +88,80 @@ bool StorageManager::imageExists(const std::string& imageId) {
     return std::filesystem::exists(path);
 }
 
+bool StorageManager::storeNameMapping(const std::string& imageName, const std::string& imageHash) {
+    try {
+        auto path = getNameMappingPath(imageName);
+        
+        // Ensure parent directory exists
+        if (!ensureDirectory(path.parent_path())) {
+            std::cerr << "Failed to create directory: " << path.parent_path() << std::endl;
+            return false;
+        }
+
+        // Write mapping to file
+        std::ofstream file(path, std::ios::trunc);
+        if (!file) {
+            std::cerr << "Failed to open mapping file for writing: " << path << std::endl;
+            return false;
+        }
+
+        file << imageHash;
+        file.close();
+
+        return file.good();
+    } catch (const std::exception& e) {
+        std::cerr << "Error storing name mapping: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::optional<std::string> StorageManager::getHashByName(const std::string& imageName) {
+    try {
+        auto path = getNameMappingPath(imageName);
+
+        if (!std::filesystem::exists(path)) {
+            return std::nullopt;
+        }
+
+        std::ifstream file(path);
+        if (!file) {
+            return std::nullopt;
+        }
+
+        std::string imageHash;
+        std::getline(file, imageHash);
+
+        if (imageHash.empty()) {
+            return std::nullopt;
+        }
+
+        return imageHash;
+    } catch (const std::exception& e) {
+        std::cerr << "Error retrieving name mapping: " << e.what() << std::endl;
+        return std::nullopt;
+    }
+}
+
+bool StorageManager::deleteNameMapping(const std::string& imageName) {
+    try {
+        auto path = getNameMappingPath(imageName);
+
+        if (!std::filesystem::exists(path)) {
+            return false;
+        }
+
+        return std::filesystem::remove(path);
+    } catch (const std::exception& e) {
+        std::cerr << "Error deleting name mapping: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool StorageManager::nameMappingExists(const std::string& imageName) {
+    auto path = getNameMappingPath(imageName);
+    return std::filesystem::exists(path);
+}
+
 std::filesystem::path StorageManager::getImagePath(const std::string& imageId) const {
     // Hash the image ID
     uint64_t hash = HashUtils::xxh3_64(imageId);
@@ -103,11 +177,25 @@ std::filesystem::path StorageManager::getImagePath(const std::string& imageId) c
 
 bool StorageManager::ensureDirectory(const std::filesystem::path& path) {
     try {
-        return std::filesystem::create_directories(path);
+        std::filesystem::create_directories(path);
+        return std::filesystem::exists(path);
     } catch (const std::exception& e) {
         std::cerr << "Error creating directory: " << e.what() << std::endl;
         return false;
     }
+}
+
+std::filesystem::path StorageManager::getNameMappingPath(const std::string& imageName) const {
+    // Hash the image name for sharding
+    uint64_t hash = HashUtils::xxh3_64(imageName);
+    
+    // Generate shard path
+    std::string shardPath = HashUtils::generateShardPath(hash, shardDepth_, 2);
+    
+    // Construct full path with .mapping extension
+    std::filesystem::path fullPath = std::filesystem::path(baseDir_) / "names" / shardPath / (imageName + ".mapping");
+    
+    return fullPath;
 }
 
 } // namespace imgstore

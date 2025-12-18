@@ -28,14 +28,40 @@ The project includes a multi-stage Dockerfile that will:
 
 ### 3. Configure Persistent Storage
 
-**Critical:** Mount a persistent volume to preserve images across deployments.
+**Critical:** Mount a persistent volume to preserve images across deployments and restarts.
 
-In Coolify:
-1. Go to "Storage" section
-2. Add a new volume:
-   - **Name:** `img-store-data`
-   - **Mount Path:** `/app/storage`
-   - **Source:** Choose persistent volume location on your server
+#### Option A: Using Coolify UI (Recommended)
+
+1. Go to your application in Coolify
+2. Navigate to **"Storages"** or **"Volumes"** tab
+3. Click **"Add Volume"** or **"Add Persistent Storage"**
+4. Configure:
+   - **Name:** `img-store-data` (or any name)
+   - **Source Path (Host):** `/var/lib/coolify/storage/img-store` (or your preferred host path)
+   - **Destination Path (Container):** `/app/storage`
+   - **Mount Type:** Bind mount or Volume
+5. Click **"Save"** or **"Add"**
+
+#### Option B: Using Docker Volume
+
+If Coolify supports Docker volumes:
+1. Go to "Volumes" section
+2. Create a named volume: `img-store-data`
+3. Mount it to: `/app/storage`
+
+#### Option C: Manual Configuration (Advanced)
+
+If you have access to the Coolify compose/Docker settings, ensure:
+```yaml
+volumes:
+  - img-store-data:/app/storage
+
+volumes:
+  img-store-data:
+    driver: local
+```
+
+⚠️ **Important:** Without persistent storage, all images will be lost when the container restarts!
 
 ### 4. Environment Variables (Optional)
 
@@ -139,9 +165,43 @@ Check Coolify logs for:
 
 ### Images Lost After Redeployment
 
-- Verify persistent volume configuration
-- Check mount path is `/app/storage`
-- Ensure volume source is persistent (not ephemeral)
+**This is the most common issue!** If images disappear after restart/redeploy:
+
+1. **Check if volume is configured:**
+   - In Coolify, go to your application → "Storages" or "Volumes" tab
+   - Verify `/app/storage` is mounted to a persistent location
+
+2. **Add persistent storage if missing:**
+   - Follow Step 3 above to add persistent storage
+   - Redeploy the application
+
+3. **Verify volume is persistent (not ephemeral):**
+   - The host path should be a real directory on your server
+   - Example good paths: `/var/lib/coolify/storage/img-store`, `/data/img-store`
+   - Example bad paths: `/tmp/storage` (temporary, will be deleted)
+
+4. **Check volume permissions:**
+   ```bash
+   # SSH into your Coolify host
+   sudo ls -la /var/lib/coolify/storage/img-store
+   # Should show files owned by UID 1000 or imgstore user
+   ```
+
+5. **Verify data exists on host:**
+   ```bash
+   # Check if images are actually on the host
+   find /var/lib/coolify/storage/img-store -type f | head -10
+   ```
+
+6. **Test after restart:**
+   ```bash
+   # Upload test image
+   curl -X POST https://your-domain.com/images/named/test --data "test data"
+   
+   # Restart container in Coolify
+   # Then check if image still exists
+   curl https://your-domain.com/images/named/test
+   ```
 
 ### Build Failures
 

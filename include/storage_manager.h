@@ -49,6 +49,35 @@ public:
     bool imageExists(const std::string& imageId);
 
     /**
+     * @brief Store name-to-hash mapping
+     * @param imageName User-friendly name for the image
+     * @param imageHash Hash identifier for the image
+     * @return true if successful, false otherwise
+     */
+    bool storeNameMapping(const std::string& imageName, const std::string& imageHash);
+
+    /**
+     * @brief Retrieve hash by name
+     * @param imageName User-friendly name for the image
+     * @return Optional containing image hash if found, nullopt otherwise
+     */
+    std::optional<std::string> getHashByName(const std::string& imageName);
+
+    /**
+     * @brief Delete name mapping
+     * @param imageName User-friendly name for the image
+     * @return true if successful, false otherwise
+     */
+    bool deleteNameMapping(const std::string& imageName);
+
+    /**
+     * @brief Check if a name mapping exists
+     * @param imageName User-friendly name for the image
+     * @return true if mapping exists, false otherwise
+     */
+    bool nameMappingExists(const std::string& imageName);
+
+    /**
      * @brief Get full path for an image
      * @param imageId Unique identifier for the image
      * @return Filesystem path to the image
@@ -65,6 +94,13 @@ private:
      * @return true if directory exists or was created
      */
     bool ensureDirectory(const std::filesystem::path& path);
+
+    /**
+     * @brief Get full path for name mapping file
+     * @param imageName User-friendly name for the image
+     * @return Filesystem path to the mapping file
+     */
+    std::filesystem::path getNameMappingPath(const std::string& imageName) const;
 };
 
 } // namespace imgstore

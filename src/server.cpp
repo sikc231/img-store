@@ -79,16 +79,49 @@ void Server::setupRoutes() {
         }
         return handler_->handleDelete(imageId);
     });
+
+    // Named upload endpoint - PROTECTED
+    CROW_ROUTE(app_, "/images/named/<string>").methods(crow::HTTPMethod::POST)
+    ([this](const crow::request& req, const std::string& imageName) {
+        if (!requireAuth(req)) {
+            crow::json::wvalue result;
+            result["error"] = "Unauthorized";
+            result["message"] = "API key required for write operations";
+            return crow::response(401, result);
+        }
+        return handler_->handleNamedUpload(req, imageName);
+    });
+
+    // Named download endpoint - PUBLIC
+    CROW_ROUTE(app_, "/images/named/<string>")
+    ([this](const std::string& imageName) {
+        return handler_->handleNamedDownload(imageName);
+    });
+
+    // Named delete endpoint - PROTECTED
+    CROW_ROUTE(app_, "/images/named/<string>").methods(crow::HTTPMethod::DELETE)
+    ([this](const crow::request& req, const std::string& imageName) {
+        if (!requireAuth(req)) {
+            crow::json::wvalue result;
+            result["error"] = "Unauthorized";
+            result["message"] = "API key required for write operations";
+            return crow::response(401, result);
+        }
+        return handler_->handleNamedDelete(imageName);
+    });
 }
 
 void Server::run() {
     std::cout << "Starting image storage server on port " << port_ << std::endl;
     std::cout << "Storage directory: " << storage_->getImagePath("").parent_path() << std::endl;
     std::cout << "\nAvailable endpoints:" << std::endl;
-    std::cout << "  POST   /images       - Upload image" << std::endl;
-    std::cout << "  GET    /images/<id>  - Download image" << std::endl;
-    std::cout << "  DELETE /images/<id>  - Delete image" << std::endl;
-    std::cout << "  GET    /health       - Health check" << std::endl;
+    std::cout << "  POST   /images              - Upload image (returns hash)" << std::endl;
+    std::cout << "  GET    /images/<id>         - Download image by hash" << std::endl;
+    std::cout << "  DELETE /images/<id>         - Delete image by hash" << std::endl;
+    std::cout << "  POST   /images/named/<name> - Upload image with name" << std::endl;
+    std::cout << "  GET    /images/named/<name> - Download image by name" << std::endl;
+    std::cout << "  DELETE /images/named/<name> - Delete name mapping" << std::endl;
+    std::cout << "  GET    /health              - Health check" << std::endl;
     std::cout << std::endl;
 
     app_.bindaddr("0.0.0.0").port(port_).multithreaded().run();

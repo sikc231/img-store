@@ -35,21 +35,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN useradd -m -u 1000 imgstore && \
-    mkdir -p /app/storage && \
-    chown -R imgstore:imgstore /app
+# Create non-root user and group
+RUN groupadd -g 1000 imgstore && \
+    useradd -m -u 1000 -g 1000 imgstore
 
 WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /app/build/bin/img-store /app/img-store
 
-# Set ownership
-RUN chown imgstore:imgstore /app/img-store
-
-# Switch to non-root user
-USER imgstore
+# Create storage directory with proper permissions BEFORE declaring volume
+RUN mkdir -p /app/storage && \
+    chown -R 1000:1000 /app/storage && \
+    chmod -R 755 /app/storage && \
+    chown 1000:1000 /app/img-store && \
+    chmod 755 /app/img-store
 
 # Expose port
 EXPOSE 8080
@@ -57,8 +57,11 @@ EXPOSE 8080
 # Label for Coolify port detection
 LABEL coolify.port="8080"
 
-# Create volume mount point
+# Declare volume AFTER setting permissions
 VOLUME ["/app/storage"]
+
+# Switch to non-root user AFTER all permission setup
+USER imgstore
 
 # Environment variable for API key (set this in .env or Coolify)
 ENV IMG_STORE_API_KEY=""

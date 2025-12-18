@@ -39,6 +39,28 @@ public:
     crow::response handleDelete(const std::string& imageId);
 
     /**
+     * @brief Handle named image upload request
+     * @param req HTTP request
+     * @param imageName User-friendly name for the image
+     * @return HTTP response
+     */
+    crow::response handleNamedUpload(const crow::request& req, const std::string& imageName);
+
+    /**
+     * @brief Handle named image download request
+     * @param imageName User-friendly name for the image
+     * @return HTTP response
+     */
+    crow::response handleNamedDownload(const std::string& imageName);
+
+    /**
+     * @brief Handle named image delete request
+     * @param imageName User-friendly name for the image
+     * @return HTTP response
+     */
+    crow::response handleNamedDelete(const std::string& imageName);
+
+    /**
      * @brief Handle health check request
      * @return HTTP response
      */

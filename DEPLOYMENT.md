@@ -2,6 +2,12 @@
 
 This guide explains how to deploy the img-store server on Coolify with persistent storage.
 
+## ⚠️ CRITICAL: Persistent Storage Required
+
+**Without persistent storage, all images will be lost when the container restarts!**
+
+See [COOLIFY_STORAGE_FIX.md](COOLIFY_STORAGE_FIX.md) for detailed troubleshooting if images disappear.
+
 ## Quick Deploy
 
 1. **Push to GitHub**
@@ -17,14 +23,17 @@ This guide explains how to deploy the img-store server on Coolify with persisten
    - Branch: `main`
    - Build Pack: `Dockerfile`
 
-3. **Configure Persistent Storage**
+3. **Configure Persistent Storage** ⚠️ **REQUIRED**
    
    In the application settings:
-   - Go to "Storage" tab
-   - Add a persistent volume:
-     - **Source**: `/app/storage` (container path)
-     - **Destination**: Create a new volume or use existing path
-   - This ensures images survive deployments and restarts
+   - Go to **"Storages"** or **"Volumes"** tab
+   - Click **"Add Volume"** or **"Add Persistent Storage"**
+   - Configure:
+     - **Source (Host)**: `/var/lib/coolify/storage/img-store` (or your preferred path)
+     - **Destination (Container)**: `/app/storage` (must be exactly this)
+     - **Type**: Bind Mount or Volume
+   
+   This ensures images survive deployments and restarts! 🎯
 
 4. **Environment Variables** (optional)
    - `PORT`: Default is 8080

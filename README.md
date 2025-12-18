@@ -2,12 +2,24 @@
 
 A high-performance C++20 HTTP server for storing, retrieving, and managing images with a sharded filesystem layout and API key authentication.
 
+## ⚠️ Important: Coolify/Docker Deployment
+
+**If images disappear after restart**, you need to configure persistent storage!
+
+👉 **Quick Fix:** See [COOLIFY_STORAGE_FIX.md](COOLIFY_STORAGE_FIX.md) for step-by-step instructions.
+
+In Coolify, add a volume mapping:
+- **Source (Host):** `/var/lib/coolify/storage/img-store`
+- **Destination (Container):** `/app/storage`
+
 ## Features
 
 - **HTTP REST API** using Crow web framework
+- **Named image storage** - Upload and retrieve images using friendly names
 - **API Key Authentication** - Public downloads, protected uploads/deletes
 - **Hash-based sharding** using xxHash3 for efficient filesystem organization
-- **Image operations**: Upload, Download, Delete
+- **Dual access modes**: Access images by name or by content hash
+- **Image operations**: Upload, Download, Delete (by name or hash)
 - **Content-type detection** for common image formats (JPEG, PNG, GIF, BMP, WebP)
 - **Content-addressable storage** - images are stored by their content hash (automatic deduplication)
 - **Docker & Coolify ready** - Easy deployment with persistent storage support
@@ -113,10 +125,25 @@ Environment Variables:
 
 ## API Endpoints
 
+See [NAMED_IMAGES.md](NAMED_IMAGES.md) for detailed documentation on named image storage.
+
+### Quick Reference
+
+#### Named Image Endpoints (Friendly Names)
+- `POST /images/named/<name>` - Upload image with custom name (Protected)
+- `GET /images/named/<name>` - Download image by name (Public)
+- `DELETE /images/named/<name>` - Delete name mapping (Protected)
+
+#### Hash-Based Endpoints (Content-Addressed)
+- `POST /images` - Upload image, returns hash (Protected)
+- `GET /images/<hash>` - Download image by hash (Public)
+- `DELETE /images/<hash>` - Delete image by hash (Protected)
+- `GET /health` - Health check (Public)
+
 ### Authentication
 
-- **Public (no auth required):** `GET /health`, `GET /images/{id}`
-- **Protected (API key required):** `POST /images`, `DELETE /images/{id}`
+- **Public (no auth required):** `GET /health`, `GET /images/{id}`, `GET /images/named/{name}`
+- **Protected (API key required):** `POST /images`, `POST /images/named/{name}`, `DELETE /images/{id}`, `DELETE /images/named/{name}`
 
 API key must be provided via:
 - `Authorization: Bearer YOUR_API_KEY` header, or
@@ -135,7 +162,32 @@ GET /health
 }
 ```
 
-### Upload Image (Protected)
+### Upload Image by Name (Protected)
+```bash
+POST /images/named/<name>
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/octet-stream
+Body: <binary image data>
+```
+
+**Response:**
+```json
+{
+  "name": "profile-photo",
+  "hash": "a1b2c3d4e5f6g7h8",
+  "status": "uploaded",
+  "size": 12345
+}
+```
+
+### Download Image by Name (Public)
+```bash
+GET /images/named/<name>
+```
+
+**Response:** Binary image data with appropriate `Content-Type` header and `X-Image-Hash` header
+
+### Upload Image by Hash (Protected)
 ```bash
 POST /images
 Authorization: Bearer YOUR_API_KEY
@@ -160,7 +212,7 @@ Body: <binary image data>
 }
 ```
 
-### Download Image (Public)
+### Download Image by Hash (Public)
 ```bash
 GET /images/<image-id>
 ```
@@ -183,7 +235,28 @@ Authorization: Bearer YOUR_API_KEY
 
 ## Examples
 
-### Upload an image (requires API key)
+### Named Image Storage (Recommended)
+```bash
+# Get API key from .env
+API_KEY=$(grep IMG_STORE_API_KEY .env | cut -d'=' -f2)
+
+# Upload with a friendly name
+curl -X POST http://localhost:8080/images/named/company-logo \
+  -H "Authorization: Bearer $API_KEY" \
+  --data-binary @logo.png
+
+# Response: {"name":"company-logo","hash":"a1b2c3...","status":"uploaded","size":12345}
+
+# Download by name (no auth needed)
+curl http://localhost:8080/images/named/company-logo > downloaded-logo.png
+
+# Update the image (upload new content to same name)
+curl -X POST http://localhost:8080/images/named/company-logo \
+  -H "Authorization: Bearer $API_KEY" \
+  --data-binary @new-logo.png
+```
+
+### Hash-Based Storage (Direct)
 ```bash
 # Get API key from .env
 API_KEY=$(grep IMG_STORE_API_KEY .env | cut -d'=' -f2)
@@ -278,18 +351,43 @@ docker run -d \
 
 ## Coolify Deployment
 
+**⚠️ Important:** Configure persistent storage or images will be lost on restart!
+
+See [COOLIFY_STORAGE_FIX.md](COOLIFY_STORAGE_FIX.md) for detailed setup instructions.
+
+### Quick Deploy Steps
+
 1. **Push code to GitHub**
+
 2. **In Coolify:**
    - Create new application from GitHub repository
    - Dockerfile is auto-detected
-3. **Add Environment Variable:**
+
+3. **⚠️ Configure Persistent Storage (REQUIRED):**
+   - Go to **"Storages"** or **"Volumes"** tab
+   - Add volume:
+     - **Source (Host):** `/var/lib/coolify/storage/img-store`
+     - **Destination (Container):** `/app/storage`
+   - Without this, images will disappear on restart!
+
+4. **Add Environment Variable (Optional):**
    - Name: `IMG_STORE_API_KEY`
    - Value: Your API key (from `.env` or generate new one)
    - **Mark as Secret** ✓ (to hide from logs)
-4. **Configure Persistent Storage:**
-   - Add volume mount: `/app/storage`
-   - This ensures images survive container rebuilds
+
 5. **Deploy**
+
+### Verify Storage Persistence
+
+After deployment, use the verification script:
+```bash
+# Set your deployed URL
+SERVER_URL="https://your-app.coolify.app" ./verify-storage.sh
+```
+
+Then restart the container in Coolify and verify images persist.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
 
 Images will persist across updates and rebuilds when using persistent volumes.
 
@@ -303,10 +401,21 @@ Images will persist across updates and rebuilds when using persistent volumes.
 
 ## Documentation
 
+- **[COOLIFY_STORAGE_FIX.md](COOLIFY_STORAGE_FIX.md)** - Fix for images disappearing after restart ⚠️
+- **[NAMED_IMAGES.md](NAMED_IMAGES.md)** - Named image storage feature guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Coolify deployment guide
 - **[endpointExamples.md](endpointExamples.md)** - Complete API examples in cURL, Python, JavaScript
 - **[AUTH_GUIDE.md](AUTH_GUIDE.md)** - Authentication setup and usage
 - **[SECURITY.md](SECURITY.md)** - Security configuration and best practices
 - **[API.md](API.md)** - Detailed API reference
+
+## Scripts
+
+- **`verify-storage.sh`** - Test if persistent storage is working correctly
+- **`named-image-examples.sh`** - Examples for named image storage
+- **`verify.sh`** - Comprehensive API testing
+- **`build.sh`** - Build the project
+- **`setup-auth.sh`** - Generate API key
 
 ## Testing
 
