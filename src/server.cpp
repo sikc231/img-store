@@ -80,8 +80,8 @@ void Server::setupRoutes() {
         return handler_->handleDelete(imageId);
     });
 
-    // Named upload endpoint - PROTECTED
-    CROW_ROUTE(app_, "/images/named/<string>").methods(crow::HTTPMethod::POST)
+    // Named upload endpoint - PROTECTED (root path)
+    CROW_ROUTE(app_, "/<string>").methods(crow::HTTPMethod::POST)
     ([this](const crow::request& req, const std::string& imageName) {
         if (!requireAuth(req)) {
             crow::json::wvalue result;
@@ -92,14 +92,14 @@ void Server::setupRoutes() {
         return handler_->handleNamedUpload(req, imageName);
     });
 
-    // Named download endpoint - PUBLIC
-    CROW_ROUTE(app_, "/images/named/<string>")
+    // Named download endpoint - PUBLIC (root path)
+    CROW_ROUTE(app_, "/<string>")
     ([this](const std::string& imageName) {
         return handler_->handleNamedDownload(imageName);
     });
 
-    // Named delete endpoint - PROTECTED
-    CROW_ROUTE(app_, "/images/named/<string>").methods(crow::HTTPMethod::DELETE)
+    // Named delete endpoint - PROTECTED (root path)
+    CROW_ROUTE(app_, "/<string>").methods(crow::HTTPMethod::DELETE)
     ([this](const crow::request& req, const std::string& imageName) {
         if (!requireAuth(req)) {
             crow::json::wvalue result;
@@ -118,9 +118,9 @@ void Server::run() {
     std::cout << "  POST   /images              - Upload image (returns hash)" << std::endl;
     std::cout << "  GET    /images/<id>         - Download image by hash" << std::endl;
     std::cout << "  DELETE /images/<id>         - Delete image by hash" << std::endl;
-    std::cout << "  POST   /images/named/<name> - Upload image with name" << std::endl;
-    std::cout << "  GET    /images/named/<name> - Download image by name" << std::endl;
-    std::cout << "  DELETE /images/named/<name> - Delete name mapping" << std::endl;
+    std::cout << "  POST   /<name>.png          - Upload image with name" << std::endl;
+    std::cout << "  GET    /<name>.png          - Download image by name" << std::endl;
+    std::cout << "  DELETE /<name>.png          - Delete name mapping" << std::endl;
     std::cout << "  GET    /health              - Health check" << std::endl;
     std::cout << std::endl;
 
