@@ -4,10 +4,11 @@ services:
   img-store:
     build: .
     container_name: img-store
+    user: "1000:1000"
     ports:
       - "8080:8080"
     volumes:
-      - ./storage:/app/storage
+      - ./storage:/app/storage:rw
     env_file:
       - .env
     restart: unless-stopped
