@@ -208,6 +208,27 @@ crow::response ImageHandler::handleHealth() {
     return crow::response(200, result);
 }
 
+crow::response ImageHandler::handleListNames() {
+    try {
+        auto names = storage_->getAllNames();
+        
+        crow::json::wvalue result;
+        result["count"] = names.size();
+        result["names"] = crow::json::wvalue::list();
+        
+        for (size_t i = 0; i < names.size(); ++i) {
+            result["names"][i] = names[i];
+        }
+        
+        return crow::response(200, result);
+    } catch (const std::exception& e) {
+        crow::json::wvalue error;
+        error["error"] = "Failed to list names";
+        error["message"] = e.what();
+        return crow::response(500, error);
+    }
+}
+
 std::string ImageHandler::generateImageId(const std::vector<uint8_t>& data) {
     uint64_t hash = HashUtils::xxh3_64(data.data(), data.size());
     return HashUtils::hashToHex(hash);

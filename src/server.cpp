@@ -50,6 +50,12 @@ void Server::setupRoutes() {
         return handler_->handleHealth();
     });
 
+    // List all names endpoint - PUBLIC
+    CROW_ROUTE(app_, "/images/names")
+    ([this]() {
+        return handler_->handleListNames();
+    });
+
     // Upload endpoint - PROTECTED
     CROW_ROUTE(app_, "/images").methods(crow::HTTPMethod::POST)
     ([this](const crow::request& req) {
@@ -118,6 +124,7 @@ void Server::run() {
     std::cout << "  POST   /images              - Upload image (returns hash)" << std::endl;
     std::cout << "  GET    /images/<id>         - Download image by hash" << std::endl;
     std::cout << "  DELETE /images/<id>         - Delete image by hash" << std::endl;
+    std::cout << "  GET    /images/names        - List all image names" << std::endl;
     std::cout << "  POST   /<name>.png          - Upload image with name" << std::endl;
     std::cout << "  GET    /<name>.png          - Download image by name" << std::endl;
     std::cout << "  DELETE /<name>.png          - Delete name mapping" << std::endl;

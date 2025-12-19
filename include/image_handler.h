@@ -66,6 +66,12 @@ public:
      */
     crow::response handleHealth();
 
+    /**
+     * @brief Handle list all names request
+     * @return HTTP response with array of image names
+     */
+    crow::response handleListNames();
+
 private:
     std::shared_ptr<StorageManager> storage_;
 

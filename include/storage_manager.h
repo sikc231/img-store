@@ -78,6 +78,12 @@ public:
     bool nameMappingExists(const std::string& imageName);
 
     /**
+     * @brief Get all stored image names
+     * @return Vector of all image names
+     */
+    std::vector<std::string> getAllNames() const;
+
+    /**
      * @brief Get full path for an image
      * @param imageId Unique identifier for the image
      * @return Filesystem path to the image

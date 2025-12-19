@@ -203,7 +203,36 @@ curl http://your-domain.com/health
 **Response (200):**
 ```json
 {
-  "status": "healthy"
+  "status": "healthy",
+  "service": "img-store"
+}
+```
+
+---
+
+## List Images
+
+### Get All Image Names
+```http
+GET /images/names
+```
+
+Retrieve a list of all named images. Public endpoint.
+
+**Example:**
+```bash
+curl http://your-domain.com/images/names
+```
+
+**Response (200):**
+```json
+{
+  "count": 3,
+  "names": [
+    "logo.png",
+    "profile-pic.jpg",
+    "banner.webp"
+  ]
 }
 ```
 

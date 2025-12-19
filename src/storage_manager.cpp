@@ -162,6 +162,30 @@ bool StorageManager::nameMappingExists(const std::string& imageName) {
     return std::filesystem::exists(path);
 }
 
+std::vector<std::string> StorageManager::getAllNames() const {
+    std::vector<std::string> names;
+    
+    try {
+        std::filesystem::path namesDir = std::filesystem::path(baseDir_) / "names";
+        
+        if (!std::filesystem::exists(namesDir)) {
+            return names;
+        }
+        
+        // Recursively iterate through all .mapping files
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(namesDir)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".mapping") {
+                std::string filename = entry.path().stem().string();
+                names.push_back(filename);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error listing names: " << e.what() << std::endl;
+    }
+    
+    return names;
+}
+
 std::filesystem::path StorageManager::getImagePath(const std::string& imageId) const {
     // Hash the image ID
     uint64_t hash = HashUtils::xxh3_64(imageId);
