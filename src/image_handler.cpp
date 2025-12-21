@@ -9,12 +9,26 @@ ImageHandler::ImageHandler(std::shared_ptr<StorageManager> storage)
 
 crow::response ImageHandler::handleUpload(const crow::request& req) {
     try {
+        // Log request details
+        auto contentLength = req.get_header_value("Content-Length");
+        std::cout << "Received image upload request" << std::endl;
+        std::cout << "  Content-Length header: " << (contentLength.empty() ? "not set" : contentLength) << std::endl;
+        std::cout << "  Request body size: " << req.body.size() << " bytes" << std::endl;
+
         // Get image data from request body
         std::vector<uint8_t> imageData(req.body.begin(), req.body.end());
 
         if (imageData.empty()) {
-            return crow::response(400, "Empty image data");
+            std::cerr << "Upload failed: Empty image data" << std::endl;
+            std::cerr << "  Content-Length was: " << contentLength << std::endl;
+            crow::json::wvalue error;
+            error["error"] = "Empty image data";
+            error["content_length_header"] = contentLength.empty() ? "missing" : contentLength;
+            error["body_size"] = req.body.size();
+            return crow::response(400, error);
         }
+        
+        std::cout << "Processing image upload (" << imageData.size() << " bytes)" << std::endl;
 
         // Generate unique ID based on content
         std::string imageId = generateImageId(imageData);
@@ -93,12 +107,27 @@ crow::response ImageHandler::handleNamedUpload(const crow::request& req, const s
             return crow::response(400, "Image name cannot be empty");
         }
 
+        // Log request details
+        auto contentLength = req.get_header_value("Content-Length");
+        std::cout << "Received named upload request for '" << imageName << "'" << std::endl;
+        std::cout << "  Content-Length header: " << (contentLength.empty() ? "not set" : contentLength) << std::endl;
+        std::cout << "  Request body size: " << req.body.size() << " bytes" << std::endl;
+
         // Get image data from request body
         std::vector<uint8_t> imageData(req.body.begin(), req.body.end());
 
         if (imageData.empty()) {
-            return crow::response(400, "Empty image data");
+            std::cerr << "Named upload failed: Empty image data for '" << imageName << "'" << std::endl;
+            std::cerr << "  Content-Length was: " << contentLength << std::endl;
+            crow::json::wvalue error;
+            error["error"] = "Empty image data";
+            error["name"] = imageName;
+            error["content_length_header"] = contentLength.empty() ? "missing" : contentLength;
+            error["body_size"] = req.body.size();
+            return crow::response(400, error);
         }
+        
+        std::cout << "Processing named upload: '" << imageName << "' (" << imageData.size() << " bytes)" << std::endl;
 
         // Generate unique ID based on content
         std::string imageHash = generateImageId(imageData);
